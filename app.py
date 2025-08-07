@@ -54,7 +54,7 @@ def home():
         # Use genai
         sample_file = genai.upload_file(path=filepath)
         #os.remove(filepath)
-        model = genai.GenerativeModel(model_name="models/gemini-1.5-flash-002")
+        model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
         text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis.Format the OCR text to presentable format.  Include the file name "+filepath +" in metadata in addition to your metadata. Also include the "+ get_file_stat(filepath)  +" the metadata in addition"
         os.remove(filepath)
         response = model.generate_content([text, sample_file])
