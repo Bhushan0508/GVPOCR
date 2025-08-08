@@ -1,0 +1,1 @@
+OCR this image. Generate Metadata. Give both results in JSON format for further analysis. Format the OCR text to presentable format. Include the file name " + filepath + " in metadata in addition to your metadata.

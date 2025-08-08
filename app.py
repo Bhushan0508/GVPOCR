@@ -1,3 +1,4 @@
+from pydoc import text
 from flask import Flask, request, render_template
 import os  # For file path manipulation
 import google.generativeai as genai
@@ -38,7 +39,17 @@ def get_file_stat(file_path):
         print(e)
         return ""
     
-
+def read_prompt():
+    try:
+        with open('prompt.txt', 'r') as file:
+            prompt = file.read()
+        return prompt
+    except FileNotFoundError:
+        print("Prompt file not found.")
+        return ""
+    except Exception as e:
+        print(f"An error occurred while reading the prompt: {e}")
+        return ""
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -55,8 +66,11 @@ def home():
         sample_file = genai.upload_file(path=filepath)
         #os.remove(filepath)
         model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
-        text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis.Format the OCR text to presentable format.  Include the file name "+filepath +" in metadata in addition to your metadata. Also include the "+ get_file_stat(filepath)  +" the metadata in addition"
-        os.remove(filepath)
+        #text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis.Format the OCR text to presentable format.  Include the file name "+filepath +" in metadata in addition to your metadata. Also include the "+ get_file_stat(filepath)  +" the metadata in addition"
+        text = read_prompt()
+        if not text:
+            text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis. Format the OCR text to presentable format. Include the file name " + filepath + " in metadata in addition to your metadata."
+        os.remove(filepath)        
         response = model.generate_content([text, sample_file])
         return render_template('index.html', output=response.text)
 
