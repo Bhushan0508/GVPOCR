@@ -66,12 +66,15 @@ def home():
         sample_file = genai.upload_file(path=filepath)
         #os.remove(filepath)
         model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
-        #text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis.Format the OCR text to presentable format.  Include the file name "+filepath +" in metadata in addition to your metadata. Also include the "+ get_file_stat(filepath)  +" the metadata in addition"
-        text = read_prompt()
-        if not text:
-            text = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis. Format the OCR text to presentable format. Include the file name " + filepath + " in metadata in addition to your metadata."
-        os.remove(filepath)        
-        response = model.generate_content([text, sample_file])
+        
+        base_prompt = read_prompt().strip()
+        if not base_prompt:
+            base_prompt = "OCR this image. Generate Metadata. Give both results in JSON format for further analysis. Format the OCR text to presentable format. "
+        # Add file path info to prompt
+        prompt = f"{base_prompt}\nInclude the file name '{filepath}' in the metadata in addition to your metadata. Also include the file size, permissions, last modified time, and creation time in the metadata.\n{get_file_stat(filepath)}"
+        os.remove(filepath)
+        print("Prompt text:", prompt)
+        response = model.generate_content([prompt, sample_file])
         return render_template('index.html', output=response.text)
 
     # Render the form on GET request
