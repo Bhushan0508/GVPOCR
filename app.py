@@ -1,10 +1,13 @@
-from pydoc import text
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
+from flask_cors import CORS
 import os  # For file path manipulation
 import google.generativeai as genai
 import json
 import time
+import requests
+
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 app.config['UPLOAD_FOLDER'] = '/tmp'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
@@ -79,6 +82,42 @@ def home():
 
     # Render the form on GET request
     return render_template('index.html')
+
+
+@app.route('/para', methods=['POST'])
+def call_another_service():
+    """
+    This route receives a JSON payload with a 'text' key,
+    sends it to the Gemini API for processing, and returns the response.
+    It expects a POST request with a JSON body like: {"text": "Your prompt here"}
+    """
+    try:
+        # Get the JSON data from the incoming request.
+        incoming_data = request.get_json()
+        if not incoming_data or 'text' not in incoming_data:
+            return jsonify({"error": "Request body must be JSON and contain a 'text' key."}), 400
+
+        # Call the Gemini API
+        model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
+        prompt = f"<|USER|>Please modify the text to generate paragraphs and also add suitable paragraph headers for the text \"{incoming_data['text']}\"<|ASSISTANT|>"
+
+        response = model.generate_content([prompt])
+        print("Response from Gemini API:", response.text)
+        # The response object has a `text` attribute for the content.
+        return jsonify({"response": response.text}), 200
+
+    except json.JSONDecodeError:
+        # Handle JSON decoding errors (e.g., if the request body is not valid JSON)
+        app.logger.error("Invalid JSON in request body.")
+        return jsonify({"error": "Invalid JSON in request body."}), 400  # Bad Request
+    except KeyError:
+        # This will be caught if 'text' is not in incoming_data
+        app.logger.error("Missing 'text' key in JSON payload.")
+        return jsonify({"error": "Missing 'text' key in JSON payload."}), 400
+    except Exception as e:
+        # Handle other errors, like from the Gemini API itself.
+        app.logger.error(f"Unexpected error: {e}")
+        return jsonify({"error": f"An error occurred with the generative AI service: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
